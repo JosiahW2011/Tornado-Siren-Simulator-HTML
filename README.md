@@ -12,4 +12,4 @@ I understand that there's minimal controls, but</br>
 you'll get the hang of it in a jiffy!</br>
 </br>
 If you enjoyed this creation, please try donating</br>
-to my Venmo for more projects like these!: <a href="https://account.venmo.com/u/Josiah_D_Widener">@Josiah_D_Widener</a>
+to my Venmo for more projects like these!: <a href="https://account.venmo.com/u/Josiah_D_Widener" target="_blank">@Josiah_D_Widener</a>
