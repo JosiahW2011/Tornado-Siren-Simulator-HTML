@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Tornado Siren Simulator</title>
+		<style>
+			html, body {
+				width: 100vw;
+				height: 100vh;
+			}
+			html {
+				scroll-behavior: smooth;
+			}
+			body {
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				background-color: #ccc;
+				color: #fff;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex-direction: column;
+
+				margin: 0px;
+				text-shadow: 1px 1px 4px #000;
+				
+				overflow-x: hidden;
+				overflow-y: scroll;
+			}
+			header {
+				width: 100vw;
+				height: 14vh;
+				text-align: center;
+				background-color: #aaa;
+				border-bottom: 2px solid gray;
+				box-shadow: 0px 1px 24px #000;
+				z-index: 10;
+			}
+			header h1 {
+				font-weight: bold;
+				font-size: 4.5vh;
+				width: 100%;
+				height: 100%;
+			}
+			#main-body {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex-direction: column;
+				flex: 1;
+			}
+			#controls, #menu {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex: 1;
+			}
+			button {
+				font-size: 32px;
+				border-radius: 6px;
+				color: #fff;
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				width: 40%;
+				height: 50%;
+				margin: 32px;
+				border-style: outset;
+				border-width: 6px;
+				font-weight: bold;
+				box-shadow: 1px 1px 6px #000;
+			}
+			button:hover {
+				opacity: 0.75;
+				border-style: inset;
+				transform: translateY(-2px);
+			}
+			button:active {
+				opacity: 0.5;
+				box-shadow: 0px 0px 6px #fff;
+				transform: translateY(1px);
+			}
+			.tile {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-direction: column;
+				margin: auto;
+			}
+			.tile label {
+				font-size: 20px;
+			}
+			.tile input {
+				font-size: 16px;
+			}
+		</style>
+	</head>
+	<body>
+		<header><h1>Tornado Siren Simulator</h1></header>
+		<div id="main-body">
+			<img id='img' src="https://media.tenor.com/3Woc9Y87MmEAAAAM/fast2001.gif" width="500" height="250" style="margin: 24px;"></img>
+			<div id="controls">
+				<div class="tile">
+					<label for="waveform">Rotor Type:</label>
+					<select id="waveform">
+						<option value="sawtooth">Sawtooth (Mechanical)</option>
+						<option value="square">Square (Buzzy/Older)</option>
+						<option value="triangle">Triangle (Sleek/Accurate)</option>
+						<option value="sine">Sine (Electronic/Modern)</option>
+					</select>
+				</div>
+				<div class="tile">
+					<label for="baseFreq" id="bFLabel">Base Pitch:</label>
+					<input type="range" id="baseFreq" min="400" max="1200" value="400" step="5">
+				</div>
+				<div class="tile">
+					<label for="dropTime" id="dTLabel">Drop time:</label>
+					<input type="range" id="dropTime" min="1" max="16" value="4" step="1">
+				</div>
+			</div>
+			<div id="menu">
+				<button id="play" style="background-color: #00ff00; color: #007700;">▶️ PLAY</button>
+				<button id="stop" style="background-color: #ff0000; color: #770000;">⏸️ STOP</button>
+			</div>
+		</div>
+		<script>
+			let osc1 = null;
+			let osc2 = null;
+
+            const img = document.getElementById('img');
+			let spinning_gif = "https://media.tenor.com/3Woc9Y87MmEAAAAM/fast2001.gif";
+			let stiff = "https://codehs.com/uploads/298ab794023b237c9c1fa548aa2bcfe3";
+            img.src = stiff;
+
+			const baseFreq = document.getElementById('baseFreq');
+			const bFLabel = document.getElementById('bFLabel');
+			const dropTime = document.getElementById('dropTime');
+			const dTLabel = document.getElementById('dTLabel');
+			const waveform = document.getElementById('waveform');
+			
+			const play = document.getElementById('play');
+			const stop = document.getElementById('stop');
+
+			let isPlaying = false;
+			let filterNode = null;
+			let gainNode = null;
+			
+			let audioCTX = new (window.AudioContext || window.webkitAudioContext)();
+			const compressor = audioCTX.createDynamicsCompressor();
+
+			play.addEventListener('click', () => { startSiren(); });
+			stop.addEventListener('click', () => { stopSiren(); });
+
+			function startSiren() {
+				if (isPlaying) return;
+				compressor.connect(audioCTX.destination);
+				gainNode = audioCTX.createGain();
+				gainNode.gain.setValueAtTime(0, audioCTX.currentTime);
+				gainNode.gain.linearRampToValueAtTime(0.5, audioCTX.currentTime + 2.5);
+				gainNode.connect(compressor);
+				filterNode = audioCTX.createBiquadFilter();
+				filterNode.type = 'lowpass';
+				filterNode.frequency.setValueAtTime(parseFloat(baseFreq.value), audioCTX.currentTime);
+				filterNode.connect(gainNode);
+				osc1 = audioCTX.createOscillator();
+				osc2 = audioCTX.createOscillator();
+				osc1.type = waveform.value;
+				osc2.type = waveform.value;
+				osc1.connect(filterNode);
+				osc2.connect(filterNode);
+				osc1.start();
+				osc2.start();
+				isPlaying = true;
+				play.disabled = true;
+				play.style.opacity = 0.25;
+				stop.disabled = false;
+				stop.style.opacity = 1.0;
+				img.src = spinning_gif;
+			}
+
+			function stopSiren() {
+				if (!isPlaying) return;
+				isPlaying = false;
+				const now = audioCTX.currentTime;
+				gainNode.gain.cancelScheduledValues(now);
+				gainNode.gain.linearRampToValueAtTime(0, now + parseFloat(dropTime.value));
+				osc1.frequency.cancelScheduledValues(now);
+				osc2.frequency.cancelScheduledValues(now);
+				osc1.frequency.exponentialRampToValueAtTime(200, now + parseFloat(dropTime.value));
+				osc2.frequency.exponentialRampToValueAtTime(200 * 1.333, now + parseFloat(dropTime.value));
+				setTimeout(() => {
+					if (osc1) osc1.stop(); osc1 = null;
+					if (osc2) osc2.stop(); osc2 = null;
+					play.disabled = false;
+					play.style.opacity = 1.0;
+					stop.disabled = true;
+					stop.style.opacity = 0.25;
+					img.src = stiff;
+				}, parseFloat(dropTime.value * 1000));
+			}
+
+			function update() {
+				bFLabel.innerHTML = "Base Pitch: " + baseFreq.value;
+				dTLabel.innerHTML = "Drop Time: " + dropTime.value;
+				requestAnimationFrame(update);
+			}
+			update();
+		</script>
+	</body>
+</html>
